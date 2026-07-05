@@ -6,6 +6,7 @@ OKX和Binance交易所公告监控系统
 """
 
 import json
+import os
 import time
 import logging
 import requests
@@ -36,7 +37,24 @@ def setup_logging(config):
 def load_config():
     """加载配置文件"""
     with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
-        return json.load(f)
+        config = json.load(f)
+    
+    # 从环境变量读取敏感信息
+    telegram_config = config.get('telegram', {})
+    bot_token_env = telegram_config.get('bot_token_env', 'TELEGRAM_BOT_TOKEN')
+    chat_id_env = telegram_config.get('chat_id_env', 'TELEGRAM_CHAT_ID')
+    
+    bot_token = os.environ.get(bot_token_env)
+    chat_id = os.environ.get(chat_id_env)
+    
+    if not bot_token or not chat_id:
+        raise ValueError(f"请设置环境变量: {bot_token_env} 和 {chat_id_env}")
+    
+    # 将环境变量值写入配置
+    config['telegram']['bot_token'] = bot_token
+    config['telegram']['chat_id'] = int(chat_id)
+    
+    return config
 
 def load_sent_announcements():
     """加载已发送的公告ID列表"""

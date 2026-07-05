@@ -1,7 +1,7 @@
 {
     "telegram": {
-        "bot_token": "8633947264:AAEjl2MdcZkRIN-JxMF9QxXXtiHNZF-yXVc",
-        "chat_id": -5435135504
+        "bot_token_env": "TELEGRAM_BOT_TOKEN",
+        "chat_id_env": "TELEGRAM_CHAT_ID"
     },
     "monitor": {
         "check_interval_minutes": 10,

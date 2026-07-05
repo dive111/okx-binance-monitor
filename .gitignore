@@ -38,6 +38,9 @@ ENV/
 # 数据文件
 sent_announcements.json
 
+# 环境变量文件（包含敏感信息）
+.env
+
 # 操作系统
 .DS_Store
 Thumbs.db
