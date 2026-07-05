@@ -112,7 +112,8 @@ def get_okx_announcements(logger):
 def get_binance_announcements(logger):
     """获取Binance最新公告"""
     try:
-        # Binance 公告 API - 使用新加坡区域
+        # Binance 公告 API - 尝试不同的API端点
+        # 方案1: 使用新的API端点
         url = "https://www.binance.com/bapi/composite/v1/public/cms/article/catalog/list/query"
         
         payload = {
@@ -123,7 +124,11 @@ def get_binance_announcements(logger):
         
         headers = {
             'Content-Type': 'application/json',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+            'Accept': 'application/json',
+            'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+            'Referer': 'https://www.binance.com/',
+            'Origin': 'https://www.binance.com'
         }
         
         response = requests.post(url, json=payload, headers=headers, timeout=30)
@@ -131,8 +136,8 @@ def get_binance_announcements(logger):
         
         if response.status_code == 400:
             logger.warning("Binance API返回400，尝试备用方案...")
-            # 尝试不同的 catalogId
-            for catalog_id in ["48", "49", "50", "51", "1"]:
+            # 方案2: 尝试其他可能的catalogId
+            for catalog_id in ["48", "49", "50", "51", "1", ""]:
                 payload_test = {
                     "catalogId": catalog_id,
                     "pageNo": 1,
@@ -143,9 +148,19 @@ def get_binance_announcements(logger):
                 if response.status_code != 400:
                     break
         
+        if response.status_code == 400:
+            logger.warning("仍返回400，尝试不带catalogId...")
+            # 方案3: 尝试不带catalogId
+            payload = {
+                "pageNo": 1,
+                "pageSize": 20
+            }
+            response = requests.post(url, json=payload, headers=headers, timeout=30)
+            logger.info(f"不带catalogId的状态码: {response.status_code}")
+        
         if response.status_code != 200:
             logger.error(f"Binance API返回非200状态码: {response.status_code}")
-            logger.debug(f"响应内容: {response.text[:200]}")
+            logger.debug(f"响应内容: {response.text[:500]}")
             return []
         
         data = response.json()
