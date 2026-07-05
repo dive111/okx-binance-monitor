@@ -71,12 +71,13 @@ def save_sent_announcements(sent_data):
 def get_okx_announcements(logger):
     """获取OKX最新公告"""
     try:
-        url = "https://www.okx.com/v3/support/announcements"
+        # OKX 使用帮助中心 API
+        url = "https://www.okx.com/support/hc/zh-cn/articles.json?per_page=20"
         headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Accept': 'application/json'
         }
         
-        # OKX API需要特定的请求头
         response = requests.get(url, headers=headers, timeout=30)
         response.raise_for_status()
         
@@ -84,16 +85,16 @@ def get_okx_announcements(logger):
         announcements = []
         
         # 解析OKX公告数据
-        if 'data' in data:
-            for item in data['data']:
-                ann = {
-                    'id': item.get('indexId', ''),
-                    'title': item.get('title', ''),
-                    'link': f"https://www.okx.com/support/hc/zh-cn/articles/{item.get('indexId', '')}",
-                    'time': item.get('publishTime', ''),
-                    'type': item.get('typeName', '公告')
-                }
-                announcements.append(ann)
+        articles = data.get('articles', [])
+        for item in articles:
+            ann = {
+                'id': str(item.get('id', '')),
+                'title': item.get('title', ''),
+                'link': item.get('html_url', ''),
+                'time': item.get('updated_at', ''),
+                'type': '公告'
+            }
+            announcements.append(ann)
         
         logger.info(f"OKX: 获取到 {len(announcements)} 条公告")
         return announcements
@@ -105,13 +106,14 @@ def get_okx_announcements(logger):
 def get_binance_announcements(logger):
     """获取Binance最新公告"""
     try:
-        # Binance公告API
+        # Binance 使用新的公告 API
         url = "https://www.binance.com/bapi/composite/v1/public/cms/article/catalog/list/query"
         
         payload = {
-            "catalogId": 48,  # 所有公告
+            "catalogId": "48",
             "pageNo": 1,
-            "pageSize": 20
+            "pageSize": 20,
+            "language": "zh-CN"
         }
         
         headers = {
