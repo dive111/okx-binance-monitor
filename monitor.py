@@ -129,7 +129,8 @@ def get_binance_announcements(logger):
         response = requests.post(url, json=payload, headers=headers, timeout=30)
         
         if response.status_code == 400:
-            logger.warning("Binance API返回400，尝试备用参数...")
+            logger.warning("Binance API返回400，尝试备用方案...")
+            # 尝试不同的 catalogId
             payload = {
                 "catalogId": "48",
                 "pageNo": 1,
@@ -137,6 +138,19 @@ def get_binance_announcements(logger):
                 "language": "zh-CN"
             }
             response = requests.post(url, json=payload, headers=headers, timeout=30)
+        
+        if response.status_code == 400:
+            logger.warning("Binance API仍返回400，尝试其他 catalogId...")
+            # 尝试其他可能的 catalogId
+            for catalog_id in ["48", "49", "50", "51"]:
+                payload = {
+                    "catalogId": catalog_id,
+                    "pageNo": 1,
+                    "pageSize": 20
+                }
+                response = requests.post(url, json=payload, headers=headers, timeout=30)
+                if response.status_code != 400:
+                    break
         
         response.raise_for_status()
         data = response.json()
