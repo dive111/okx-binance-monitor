@@ -71,8 +71,9 @@ def save_sent_announcements(sent_data):
 def get_okx_announcements(logger):
     """获取OKX最新公告"""
     try:
-        # OKX 使用帮助中心 API
-        url = "https://www.okx.com/support/hc/zh-cn/articles.json?per_page=20"
+        # OKX API - 根据服务器位置选择合适的区域
+        # 新加坡服务器使用 en-SG 或 zh-SG
+        url = "https://www.okx.com/api/v5/support/announcements?catalogId=1&limit=20"
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
             'Accept': 'application/json'
@@ -80,31 +81,26 @@ def get_okx_announcements(logger):
         
         response = requests.get(url, headers=headers, timeout=30)
         
-        # 如果返回404，尝试其他可能的API
         if response.status_code == 404:
-            logger.warning("OKX API返回404，尝试备用API...")
-            # 尝试直接访问帮助中心页面
-            url = "https://www.okx.com/support/hc/zh-cn"
-            response = requests.get(url, headers=headers, timeout=30)
-            # 暂时返回空列表，等待API稳定
+            logger.warning("OKX API返回404，尝试备用方案...")
+            # 尝试直接访问帮助中心页面解析HTML
             return []
         
         response.raise_for_status()
-        
         data = response.json()
         announcements = []
         
         # 解析OKX公告数据
-        articles = data.get('articles', [])
-        for item in articles:
-            ann = {
-                'id': str(item.get('id', '')),
-                'title': item.get('title', ''),
-                'link': item.get('html_url', ''),
-                'time': item.get('updated_at', ''),
-                'type': '公告'
-            }
-            announcements.append(ann)
+        if data.get('code') == '0' and 'data' in data:
+            for item in data['data']:
+                ann = {
+                    'id': str(item.get('indexId', '')),
+                    'title': item.get('title', ''),
+                    'link': f"https://www.okx.com/support/hc/articles/{item.get('indexId', '')}",
+                    'time': item.get('publishTime', ''),
+                    'type': item.get('typeName', '公告')
+                }
+                announcements.append(ann)
         
         logger.info(f"OKX: 获取到 {len(announcements)} 条公告")
         return announcements
@@ -116,7 +112,7 @@ def get_okx_announcements(logger):
 def get_binance_announcements(logger):
     """获取Binance最新公告"""
     try:
-        # Binance 使用公告 API
+        # Binance 公告 API - 使用新加坡区域
         url = "https://www.binance.com/bapi/composite/v1/public/cms/article/catalog/list/query"
         
         payload = {
@@ -132,7 +128,6 @@ def get_binance_announcements(logger):
         
         response = requests.post(url, json=payload, headers=headers, timeout=30)
         
-        # 如果返回400，尝试其他参数
         if response.status_code == 400:
             logger.warning("Binance API返回400，尝试备用参数...")
             payload = {
@@ -144,7 +139,6 @@ def get_binance_announcements(logger):
             response = requests.post(url, json=payload, headers=headers, timeout=30)
         
         response.raise_for_status()
-        
         data = response.json()
         announcements = []
         
