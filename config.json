@@ -1,0 +1,15 @@
+{
+    "telegram": {
+        "bot_token": "8633947264:AAEjl2MdcZkRIN-JxMF9QxXXtiHNZF-yXVc",
+        "chat_id": -5435135504
+    },
+    "monitor": {
+        "check_interval_minutes": 10,
+        "okx_api_url": "https://www.okx.com/v3/support/announcements",
+        "binance_api_url": "https://www.binance.com/bapi/composite/v1/public/cms/article/catalog/list/query"
+    },
+    "logging": {
+        "log_file": "monitor.log",
+        "log_level": "INFO"
+    }
+}
