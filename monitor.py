@@ -79,6 +79,16 @@ def get_okx_announcements(logger):
         }
         
         response = requests.get(url, headers=headers, timeout=30)
+        
+        # 如果返回404，尝试其他可能的API
+        if response.status_code == 404:
+            logger.warning("OKX API返回404，尝试备用API...")
+            # 尝试直接访问帮助中心页面
+            url = "https://www.okx.com/support/hc/zh-cn"
+            response = requests.get(url, headers=headers, timeout=30)
+            # 暂时返回空列表，等待API稳定
+            return []
+        
         response.raise_for_status()
         
         data = response.json()
@@ -106,14 +116,13 @@ def get_okx_announcements(logger):
 def get_binance_announcements(logger):
     """获取Binance最新公告"""
     try:
-        # Binance 使用新的公告 API
+        # Binance 使用公告 API
         url = "https://www.binance.com/bapi/composite/v1/public/cms/article/catalog/list/query"
         
         payload = {
             "catalogId": "48",
             "pageNo": 1,
-            "pageSize": 20,
-            "language": "zh-CN"
+            "pageSize": 20
         }
         
         headers = {
@@ -122,6 +131,18 @@ def get_binance_announcements(logger):
         }
         
         response = requests.post(url, json=payload, headers=headers, timeout=30)
+        
+        # 如果返回400，尝试其他参数
+        if response.status_code == 400:
+            logger.warning("Binance API返回400，尝试备用参数...")
+            payload = {
+                "catalogId": "48",
+                "pageNo": 1,
+                "pageSize": 20,
+                "language": "zh-CN"
+            }
+            response = requests.post(url, json=payload, headers=headers, timeout=30)
+        
         response.raise_for_status()
         
         data = response.json()
