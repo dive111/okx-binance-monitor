@@ -127,32 +127,27 @@ def get_binance_announcements(logger):
         }
         
         response = requests.post(url, json=payload, headers=headers, timeout=30)
+        logger.info(f"Binance API响应状态码: {response.status_code}")
         
         if response.status_code == 400:
             logger.warning("Binance API返回400，尝试备用方案...")
             # 尝试不同的 catalogId
-            payload = {
-                "catalogId": "48",
-                "pageNo": 1,
-                "pageSize": 20,
-                "language": "zh-CN"
-            }
-            response = requests.post(url, json=payload, headers=headers, timeout=30)
-        
-        if response.status_code == 400:
-            logger.warning("Binance API仍返回400，尝试其他 catalogId...")
-            # 尝试其他可能的 catalogId
-            for catalog_id in ["48", "49", "50", "51"]:
-                payload = {
+            for catalog_id in ["48", "49", "50", "51", "1"]:
+                payload_test = {
                     "catalogId": catalog_id,
                     "pageNo": 1,
                     "pageSize": 20
                 }
-                response = requests.post(url, json=payload, headers=headers, timeout=30)
+                response = requests.post(url, json=payload_test, headers=headers, timeout=30)
+                logger.info(f"尝试 catalogId={catalog_id}, 状态码: {response.status_code}")
                 if response.status_code != 400:
                     break
         
-        response.raise_for_status()
+        if response.status_code != 200:
+            logger.error(f"Binance API返回非200状态码: {response.status_code}")
+            logger.debug(f"响应内容: {response.text[:200]}")
+            return []
+        
         data = response.json()
         announcements = []
         
@@ -168,6 +163,8 @@ def get_binance_announcements(logger):
                     'type': item.get('catalogName', '公告')
                 }
                 announcements.append(ann)
+        else:
+            logger.warning(f"Binance API返回数据结构异常: code={data.get('code')}")
         
         logger.info(f"Binance: 获取到 {len(announcements)} 条公告")
         return announcements
